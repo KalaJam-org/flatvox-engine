@@ -1,4 +1,6 @@
-pub fn merge_tracks() {
+pub fn merge_tracks<R, W>(read1: R, read2: R, write: &mut W) -> anyhow::Result<()>
+    where R: std::io::Read,
+          W: std::io::Write + std::io::Seek {
 
     let spec = hound::WavSpec {
         channels: 1,
@@ -6,12 +8,13 @@ pub fn merge_tracks() {
         bits_per_sample: 16,
         sample_format: hound::SampleFormat::Int,
     };
-        let mut reader1 = hound::WavReader::open("CantinaBand60.wav").unwrap();
-        let mut reader2 = hound::WavReader::open("ImperialMarch60.wav").unwrap();
-        let mut writer = hound::WavWriter::create("merged.wav", spec).unwrap();
 
-        println!("{:?}", reader1.spec());
-        println!("{:?}", reader2.spec());
+    let mut reader1 = hound::WavReader::new(read1)?;
+    let mut reader2 = hound::WavReader::new(read2)?;
+    let mut writer = hound::WavWriter::new(write, spec)?;
+
+    println!("{:?}", reader1.spec());
+    println!("{:?}", reader2.spec());
 
     let mut max_amp = 0_i16;
 
@@ -31,13 +34,21 @@ pub fn merge_tracks() {
         .map(|sample| sample * multiplier)
         .for_each(|sample| writer.write_sample(sample).unwrap());
 
-    writer.finalize().unwrap();
+    writer.finalize()?;
+    Ok(())
 }
 
 #[cfg(test)]
 mod test {
+    use std::io::{BufReader, BufWriter};
+
     #[test]
     fn run() {
-        super::merge_tracks();
+        let reader1 = BufReader::new(std::fs::File::open("CantinaBand60.wav").unwrap());
+        let reader2 = BufReader::new(std::fs::File::open("ImperialMarch60.wav").unwrap());
+
+        let mut writer = BufWriter::new(std::fs::File::create("merged.wav").unwrap());
+
+        super::merge_tracks(reader1, reader2, &mut writer).unwrap();
     }
 }
