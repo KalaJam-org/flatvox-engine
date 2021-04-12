@@ -1,5 +1,6 @@
-pub fn merge_tracks<R, W>(read1: R, read2: R, write: &mut W) -> anyhow::Result<()>
-    where R: std::io::Read,
+pub fn merge_tracks<R1, R2, W>(read1: R1, read2: R2, write: &mut W) -> anyhow::Result<()>
+    where R1: std::io::Read,
+          R2: std::io::Read,
           W: std::io::Write + std::io::Seek {
 
     let spec = hound::WavSpec {
